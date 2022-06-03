@@ -105,7 +105,7 @@ b = 4;
 p = 0.8;
 Q = 150;
 %设置最大循环次数
-max_iteration = 50;
+max_iteration = 500;
 
 point_sequence_min=[];
 
@@ -128,7 +128,7 @@ for iteration = 1:max_iteration
     %计算带权重的信息量与启发量的乘积，即概率的分子（numerator）
     numerator = t.^a .* (1./distance).^b;     
     for i = 1:ant_num
-        weight_now = 0;
+        weight_now = 1;%应该要考虑初始点
         record_distance = 0;
         dt0 = zeros(num, num);
         for j = 1:num-1       
