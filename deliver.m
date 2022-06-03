@@ -38,11 +38,11 @@ plot(Result(1,1),Result(1,2),'rp','MarkerSize',9);
 function [result] = is_available(k,i)
     global Ant_tabu
     global pre
-    if ismember(k,Ant_tabu(:,i)) %如果已经路过，则不可行
+    if Ant_tabu(k+1,i) %如果已经路过，则不可行
         result = 0 ;
         return;
     end
-    if ismember(pre(k),Ant_tabu(:,i))==0 %如果还没路过商家，则不可行
+    if ~Ant_tabu(pre(k)+1,i) %如果还没路过商家，则不可行
         result = 0;
         return;
     end
@@ -86,10 +86,15 @@ for iteration = 1:max_iteration
     %储存蚂蚁走过点的序列
     point_sequence = [];
     %蚂蚁的禁忌列表，表示已经走过的点
-    Ant_tabu = zeros(1,ant_num);%0表示广义前驱，放入禁忌列表表示已经经过
+    Ant_tabu = zeros(num+1,ant_num);
+    Ant_tabu(0+1,:) = 1;%0表示广义前驱，放入禁忌列表表示已经经过，整体下标+1
+    
     %蚂蚁位置初始化
     point_sequence(1,:) = unidrnd(num/2,1,ant_num);   %随机产生point_sequence的第一行 %肯定是商家
-    Ant_tabu(2,:) = point_sequence(1,:);%将初始位置存入禁忌列表中
+    for i = 1:ant_num
+        Ant_tabu(point_sequence(1,i)+1,i) = 1;%将初始位置存入禁忌列表中
+    end
+    
     %对路径上的信息量作出更新
     t = p * t + dt;                       
     %计算带权重的信息量与启发量的乘积，即概率的分子（numerator）
@@ -100,9 +105,9 @@ for iteration = 1:max_iteration
         for j = 1:num-1       
             allow_probability = [];%概率矩阵初始化
             ka = 0;
-            for k = 1:num %计算不在禁忌列表中的城市的概率
-                ka = ka + 1;
+            for k = 1:num %计算不在禁忌列表中的城市的概率 
                 if  is_available(k,i) %如果k不在蚂蚁i的禁忌列表中
+                    ka = ka + 1;
                     allow(ka) = k;
                     allow_probability(ka) = numerator(point_sequence(j,i),k); 
                 end
@@ -120,8 +125,9 @@ for iteration = 1:max_iteration
             record_distance = record_distance + distance(point_sequence(j,i),next);
             %这边信息素 原来写了距离，笔者认为应该为全局距离的平均值
             %dt0(point_sequence(j,i),next) = Q/distance(point_sequence(j,i),next);%更新从上一个点到下一个点之间路径上的信息量
+            %next
             point_sequence(j+1,i) = next;
-            Ant_tabu(j+2,i) = next;  %将新地点放入禁忌列表
+            Ant_tabu(next+1,i) = 1;  %将新地点放入禁忌列表
         end
         %该例子中 不返回起点
         if re
@@ -140,7 +146,6 @@ for iteration = 1:max_iteration
             dt0(point_sequence(num,i),point_sequence(1,i)) = Q/avr_dis;
         end
         dt = dt + dt0; %累积信息量
-         
     end
     [distance_min(iteration), ant_min_i] = min(all_record_distance); %找出走出最短路径的蚂蚁
     point_sequence_min(:,iteration) = point_sequence(:,ant_min_i);%#ok<*AGROW> %存储最短路径
